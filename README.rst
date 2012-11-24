@@ -8,22 +8,13 @@ model that can tell me where to put commas.
 
 The best results with the current model, with a training set of 225000
 cases, that has twice as many cases without a comma as with a comma,
-the ``f1-score`` is 0.89.
+the ``f1-score`` is **0.89**.
 
 ::
 
                precision    recall  f1-score   support
 
-            0       0.94      0.96      0.95    150000
-            1       0.91      0.88      0.90     75000
-
-  avg / total       0.93      0.93      0.93    225000
-
-  Classification report for test set:
-
-               precision    recall  f1-score   support
-
-     training       0.93      0.93      0.93    225000
+ training set       0.93      0.93      0.93    225000
 
             0       0.91      0.93      0.92     50000
             1       0.85      0.82      0.84     25000
