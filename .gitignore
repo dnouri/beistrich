@@ -1,0 +1,10 @@
+.coverage
+beistrich.egg-info
+cache/
+data/
+
+bin/
+include/
+lib/
+local
+*pyc
