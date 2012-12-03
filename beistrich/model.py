@@ -24,7 +24,6 @@ class ModelWithFeatures(AbstractModel):
             max_features=max_features,
             lowercase=False,
             tokenizer=_split_tokenizer,
-            charset_error='ignore',  # XXX
             )
 
     @property

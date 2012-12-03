@@ -56,7 +56,7 @@ def test_read():
     start_marker = '*** START OF THIS'
     end_marker = '*** END OF THIS'
     result = read(urls, start_marker, end_marker)
-    assert len(result) == 1758455
+    assert len(result) == 1722453
     assert "Thomas Mann" in result
 
 
@@ -69,8 +69,8 @@ def test_create(tmpdir):
     create(urls, outfile_x=str(outfile_x), outfile_y=str(outfile_y))
     X = np.load(str(outfile_x))
     y = np.load(str(outfile_y))
-    assert X.shape == (12426, 20)
-    assert y.shape == (12426,)
+    assert X.shape == (11280, 20)
+    assert y.shape == (11280,)
 
 
 def test_stratify(tmpdir):
@@ -100,5 +100,5 @@ def test_introspect(tmpdir, capsys):
     test_create(tmpdir)
     introspect([str(tmpdir.join('data-y.npy'))])
 
-    expected = u"data-y.npy:    12426  (bincount: [11477, 949])"
+    expected = u"data-y.npy:    11280  (bincount: [10389, 891])"
     assert expected in capsys.readouterr()[0]

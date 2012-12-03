@@ -29,7 +29,7 @@ urlopen = MyOpener().open
 
 @cached()
 def download(url):  # pragma: no cover
-    return urlopen(url).read()
+    return urlopen(url).read().decode('utf-8')
 
 
 def read(urls, start_marker, end_marker):
@@ -42,7 +42,7 @@ def read(urls, start_marker, end_marker):
             end_index = text.find(end_marker)
             text = text[start_index:end_index]
         texts.append(text)
-    return '\n\n'.join(texts)
+    return u'\n\n'.join(texts)
 
 
 def make_examples(words, size=10):
@@ -80,8 +80,11 @@ def create(
     end_marker='*** END OF THIS',
     outfile_x='data-X', outfile_y='data-y',
     ):
+    # After passing the texts as unicode to 'wordpunct_tokenize', we
+    # convert them back to a more compact utf-8 representation:
     texts = read(urls, start_marker, end_marker)
     words = wordpunct_tokenize(texts)
+    words = [w.encode('utf-8') for w in words]
     examples = list(make_examples(words))
     X = np.array([e[0] for e in examples])
     y = np.array([1 if e[1] else 0 for e in examples])
