@@ -17,13 +17,13 @@ the ``f1-score`` is **0.89**.
  training set       0.93      0.93      0.93    225000
 
             0       0.91      0.93      0.92     50000
-            1       0.85      0.82      0.84     25000
+            1       0.86      0.82      0.84     25000
 
   avg / total       0.89      0.89      0.89     75000
 
   Confusion matrix:
-  [[46437  3563]
-   [ 4457 20543]]
+  [[46657  3343]
+   [ 4545 20455]]
 
 
 Installation
@@ -138,3 +138,22 @@ You can call these commands just like you call ``report``:
 If you wanna tune the models, take a look at the models and their
 parameters (specifically ``default_params`` and
 ``grid_search_params``) in ``beistrich/model.py``.
+
+
+train and correct
+-----------------
+
+Once you're happy with your model it's time to save it:
+
+.. code-block:: bash
+
+  $ bin/beistrich-learn train lr beistrich.ini
+  Saved file to data/model.pickle
+
+And finally, you can use it to correct sentences:
+
+.. code-block:: bash
+
+  $ bin/beistrich-learn correct beistrich.ini 
+
+The text to correct lives in the ``beistrich.ini`` configuration file.

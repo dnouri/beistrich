@@ -1,14 +1,19 @@
 """Learn and fine-tune models.
 
 Usage:
+  beistrich-learn train <model_name> <config_file> [options]
   beistrich-learn search <model_name> <config_file> [options]
   beistrich-learn curve <model_name> <config_file> [options]
   beistrich-learn curve_logloss <model_name> <config_file> [options]
   beistrich-learn report <model_name> <config_file> [options]
   beistrich-learn analyze <model_name> <config_file> [options]
+  beistrich-learn correct <config_file> [options]
 """
 
+import cPickle
 import matplotlib.pyplot as pl
+from nltk import wordpunct_tokenize
+import numpy as np
 from nolearn.console import Command
 from nolearn.dataset import Dataset
 from nolearn.grid_search import grid_search
@@ -22,6 +27,7 @@ from sklearn.metrics import f1_score
 from sklearn.metrics import precision_recall_curve
 
 from . import schema
+from .dataset import make_examples
 from .model import LogisticRegressionModel
 from .model import SGDModel
 
@@ -36,6 +42,18 @@ models = {
         LogisticRegressionModel()(),
         ), n_jobs=-1, verbose=1),
     }
+
+
+def train(infile_x='data/X-strat.npy', infile_y='data/y-strat.npy',
+          outfile_model='data/model.pickle', verbose=4):
+    dataset = Dataset(infile_x, infile_y)
+    clf = models[main.arguments['<model_name>']]()
+    X_train, X_test, y_train, y_test = dataset.train_test_split()
+
+    clf.fit(X_train, y_train)
+    with open(outfile_model, 'wb') as f:
+        cPickle.dump(clf, f, -1)
+    print "Saved file to {}".format(outfile_model)
 
 
 def search(infile_x='data/X-strat.npy', infile_y='data/y-strat.npy',
@@ -178,15 +196,43 @@ def analyze(infile_x='data/X-strat.npy', infile_y='data/y-strat.npy',
     print
 
 
+def correct(infile_model, text, thresh=0.5, size=10):
+    # We need to create a data vector X that we then pass into the
+    # classifier's predict method:
+    words = wordpunct_tokenize(text.decode('utf-8'))
+    words = [w.encode('utf-8') for w in words]
+    words = ["n/a"] * (size * 2) + words + ["n/a"] * (size * 2)
+    examples = list(make_examples(words, size=size))
+    X = np.array([e[0] for e in examples])
+
+    with open(infile_model, 'rb') as f:
+        clf = cPickle.load(f)
+
+    y_pred = clf.predict_proba(X)
+
+    out = u''
+    for ex, pred in zip(examples, y_pred):
+        if pred[1] > thresh:
+            out += u','
+        token = ex[0][size].decode('utf-8')
+        if token.isalnum():
+            out += u' '
+        out += token
+
+    print out.strip()
+
+
 class Main(Command):
     __doc__ = __doc__
     schema = schema
     funcs = [
+        train,
         search,
         curve,
         curve_logloss,
         report,
         analyze,
+        correct,
         ]
 
 main = Main()
