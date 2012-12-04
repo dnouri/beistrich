@@ -40,6 +40,7 @@ def read(urls, start_marker, end_marker):
         if start_marker:
             start_index = text.find(start_marker)
             end_index = text.find(end_marker)
+            assert (start_index, end_index) != (-1, -1)
             text = text[start_index:end_index]
         texts.append(text)
     return u'\n\n'.join(texts)
@@ -76,8 +77,8 @@ def make_examples(words, size=10):
 
 def create(
     urls,
-    start_marker='*** START OF THIS',
-    end_marker='*** END OF THIS',
+    start_marker='*** START OF TH',
+    end_marker='*** END OF TH',
     outfile_x='data-X', outfile_y='data-y',
     ):
     # After passing the texts as unicode to 'wordpunct_tokenize', we
