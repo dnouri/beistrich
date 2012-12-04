@@ -196,7 +196,7 @@ def analyze(infile_x='data/X-strat.npy', infile_y='data/y-strat.npy',
     print
 
 
-def correct(infile_model, text, thresh=0.5, size=10):
+def _correct(clf, text, thresh=0.8, size=10):
     # We need to create a data vector X that we then pass into the
     # classifier's predict method:
     words = wordpunct_tokenize(text.decode('utf-8'))
@@ -204,9 +204,6 @@ def correct(infile_model, text, thresh=0.5, size=10):
     words = ["n/a"] * (size * 2) + words + ["n/a"] * (size * 2)
     examples = list(make_examples(words, size=size))
     X = np.array([e[0] for e in examples])
-
-    with open(infile_model, 'rb') as f:
-        clf = cPickle.load(f)
 
     y_pred = clf.predict_proba(X)
 
@@ -219,7 +216,15 @@ def correct(infile_model, text, thresh=0.5, size=10):
             out += u' '
         out += token
 
-    print out.strip()
+    return out.strip()
+
+
+def correct(infile_model, text, thresh=0.8, size=10):
+    with open(infile_model, 'rb') as f:
+        clf = cPickle.load(f)
+
+    corrected = _correct(clf, text, thresh, size)
+    print corrected
 
 
 class Main(Command):
