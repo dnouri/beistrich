@@ -2,13 +2,21 @@ import sys
 
 from nltk.tag import stanford
 from nolearn.cache import cached
+from nolearn.dbn import DBN
+from nolearn.model import _avgest_fit_est
 from nolearn.model import AbstractModel
+from nolearn.model import AveragingEstimator
 from nolearn.model import FeatureStacker
+import numpy as np
 from sklearn.base import BaseEstimator
+from sklearn.externals.joblib import delayed
+from sklearn.externals.joblib import Parallel
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction import DictVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import SGDClassifier
 from sklearn.pipeline import Pipeline
+from sklearn.utils import shuffle
 
 
 def _split_tokenizer(doc):
@@ -38,7 +46,7 @@ class ModelWithFeatures(AbstractModel):
         return Pipeline([
             ('extract', TextExtractor(10, 11)),
             ('count', self.count(1)),
-            ('debugger', Debugger()),
+#            ('debugger', Debugger()),
             ])
 
     @property
@@ -53,7 +61,7 @@ class ModelWithFeatures(AbstractModel):
         return Pipeline([
             ('extract', TextExtractor(10, 12)),
             ('count', self.count(2)),
-            ('debugger', Debugger()),
+#            ('debugger', Debugger()),
             ])
 
     @property
@@ -76,7 +84,16 @@ class ModelWithFeatures(AbstractModel):
         return Pipeline([
             ('pos', POSFeatures(8, 12)),
             ('count', self.count(4)),
-            ('debugger', Debugger()),
+#            ('debugger', Debugger()),
+            ])
+
+    @property
+    def pos10_individual(self):
+        return Pipeline([
+            ('pos', POSFeatures(5, 15)),
+            ('todict', ToDict()),
+            ('vectorizer', DictVectorizer(sparse=False)),
+#            ('debugger', Debugger()),
             ])
 
     @property
@@ -125,6 +142,58 @@ class SGDModel(ModelWithFeatures):
             ])
 
 
+class DBNModel(ModelWithFeatures):
+    default_params = dict(
+        clf__epochs=150,
+        clf__learn_rates_pretrain=0.001,
+        clf__learn_rates=0.1,
+        #clf__learn_rate_decays=0.95,
+        #clf__learn_rate_minimums=0.01,
+        clf__layer_sizes=[-1, 64, 64, -1],
+        clf__l2_costs=0.0,#001,
+        clf__dropouts=[0.0, 0.046875, 0.03125],
+        #clf__real_valued_vis=False,
+        )
+
+    grid_search_params = dict(
+        clf__layer_sizes=[[-1, 64, -1], [-1, 16, 16, -1]],
+        )
+
+    @property
+    def pipeline(self):
+        return Pipeline([
+            ('features', self.pos10_individual),
+            ('clf', DBN([-1, 32, 32, -1], verbose=1)),
+            ])
+
+
+class BaggingEstimator(AveragingEstimator):
+    random_state = 42
+
+    def _choose(self, X, y, i):
+        random_state = self.random_state + i
+        pos_indices = shuffle(np.where(y == 1)[0], random_state=random_state)
+        neg_indices = shuffle(np.where(y == 0)[0], random_state=random_state)
+        num_per_class = min(len(pos_indices), len(neg_indices))
+        pos_indices = pos_indices[:num_per_class]
+        neg_indices = neg_indices[:num_per_class]
+        X1 = np.vstack([X[pos_indices, :], X[neg_indices, :]])
+        y1 = np.hstack([y[pos_indices], y[neg_indices]])
+        X1, y1 = shuffle(X1, y1, random_state=random_state)
+        return X1, y1
+
+    def fit(self, X, y):
+        arguments = []
+        for i, est in enumerate(self.estimators):
+            X1, y1 = self._choose(X, y, i)
+            arguments.append((est, i, X1, y1, self.verbose))
+
+        result = Parallel(n_jobs=self.n_jobs, verbose=self.verbose)(
+            delayed(_avgest_fit_est)(*arg) for arg in arguments)
+        self.estimators = result
+        return self
+
+
 class Debugger(BaseEstimator):
     def fit(self, X, y=None):
         return self
@@ -163,7 +232,8 @@ def transform_cache_key(self, X):
 
 
 class POSFeatures(BaseEstimator):
-    def __init__(self, start, end, model='german-fast.tagger'):
+    def __init__(self, start, end, model='german-hgc.tagger'):
+        # 'german-fast.tagger' is much faster, with similar performance
         self.start = start
         self.end = end
         self.model = model
@@ -186,3 +256,14 @@ class POSFeatures(BaseEstimator):
         for i, doc in enumerate(docs):
             docs[i] = ' '.join([word[1] for word in doc])
         return docs
+
+
+class ToDict(BaseEstimator):
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        res = []
+        for example in X:
+            res.append(dict((i, w) for (i, w) in enumerate(example.split())))
+        return res

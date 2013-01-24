@@ -14,16 +14,16 @@ the ``f1-score`` is **0.89**.
 
                precision    recall  f1-score   support
 
- training set       0.93      0.93      0.93    225000
+ training set       0.94      0.94      0.94    225000
 
-            0       0.91      0.93      0.92     50000
-            1       0.86      0.82      0.84     25000
+            0       0.91      0.94      0.93     50000
+            1       0.88      0.82      0.85     25000
 
-  avg / total       0.89      0.89      0.89     75000
+  avg / total       0.90      0.90      0.90     75000
 
   Confusion matrix:
-  [[46657  3343]
-   [ 4545 20455]]
+  [[47084  2916]
+   [ 4434 20566]]
 
 
 Installation

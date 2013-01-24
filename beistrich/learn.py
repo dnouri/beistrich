@@ -28,6 +28,8 @@ from sklearn.metrics import precision_recall_curve
 
 from . import schema
 from .dataset import make_examples
+from .model import BaggingEstimator
+from .model import DBNModel
 from .model import LogisticRegressionModel
 from .model import SGDModel
 
@@ -41,6 +43,14 @@ models = {
         SGDModel()(),
         LogisticRegressionModel()(),
         ), n_jobs=-1, verbose=1),
+
+    'bag': lambda: BaggingEstimator((
+        LogisticRegressionModel()(),
+        LogisticRegressionModel()(),
+        LogisticRegressionModel()(),
+        )),
+
+    'dbn': DBNModel(),
     }
 
 
@@ -60,13 +70,14 @@ def search(infile_x='data/X-strat.npy', infile_y='data/y-strat.npy',
            verbose=4, n_jobs=1):
     model = models[main.arguments['<model_name>']]
     dataset = Dataset(infile_x, infile_y)
+    dataset.n_iterations = 1
     return grid_search(
         dataset,
         model(),
         model.grid_search_params,
         verbose=verbose,
-        cv=dataset.split_indices,
         score_func=f1_score,
+        cv=dataset.split_indices,
         n_jobs=n_jobs,
         )
 
@@ -75,7 +86,8 @@ def curve(infile_x='data/X-strat.npy', infile_y='data/y-strat.npy',
           learning_curve=learning_curve):
     dataset = Dataset(infile_x, infile_y)
     clf = models[main.arguments['<model_name>']]()
-    scores_train, scores_test, sizes = learning_curve(dataset, clf, verbose=1)
+    scores_train, scores_test, sizes = learning_curve(
+        dataset, clf, steps=5, verbose=1)
     pl.plot(sizes, scores_train, 'b', label='training set')
     pl.plot(sizes, scores_test, 'r', label='test set')
     pl.xlabel('n training cases')

@@ -14,7 +14,7 @@ install_requires = [
     'docopt',
     'mock',
     'nltk>=2.0.1',
-    'nolearn',
+    'nolearn>=0.2b1',
     'pytest',
     'pytest-cov',
     ]
